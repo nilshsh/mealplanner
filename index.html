@@ -1,0 +1,2197 @@
+<!DOCTYPE html>
+<html lang="no" class="h-full bg-slate-50">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Måltidsarkitekten AI · Ukentlig Planlegger & Lagerstyring</title>
+  
+  <!-- PWA & Mobile Web App Meta Tags -->
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Måltidsarkitekten" />
+  <meta name="application-name" content="Måltidsarkitekten" />
+  <meta name="theme-color" content="#059669" />
+  <meta name="description" content="Måltidsarkitekten AI · Ukentlig Planlegger & Lagerstyring" />
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            emerald: {
+              50: '#ecfdf5',
+              100: '#d1fae5',
+              200: '#a7f3d0',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857',
+              800: '#065f46',
+              900: '#064e3b',
+            }
+          },
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- html2pdf CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    /* Range slider custom styling */
+    input[type=range] {
+      -webkit-appearance: none;
+      background: transparent;
+    }
+    input[type=range]::-webkit-slider-track {
+      width: 100%;
+      height: 6px;
+      cursor: pointer;
+      background: #e2e8f0;
+      border-radius: 3px;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      height: 16px;
+      width: 16px;
+      border-radius: 50%;
+      background: #059669;
+      cursor: pointer;
+      -webkit-appearance: none;
+      margin-top: -5px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    }
+    #slider-carbs::-webkit-slider-thumb {
+      background: #2563eb;
+    }
+    #slider-fat::-webkit-slider-thumb {
+      background: #d97706;
+    }
+
+    /* Print styling */
+    @media print {
+      .no-print {
+        display: none !important;
+      }
+      body {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+        padding: 0 !important;
+      }
+      .print-card {
+        border: 1px solid #e2e8f0 !important;
+        box-shadow: none !important;
+        break-inside: avoid;
+      }
+    }
+  </style>
+</head>
+<body class="h-full bg-slate-50 text-slate-900 antialiased flex flex-col min-h-screen">
+
+  <!-- TOP HEADER / NAVBAR -->
+  <header class="h-14 bg-white border-b border-slate-200 flex items-center justify-between px-4 sm:px-6 shrink-0 shadow-xs z-30 sticky top-0 no-print">
+    <div class="flex items-center gap-4">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center text-white shadow-xs">
+          <i data-lucide="utensils" class="w-4 h-4"></i>
+        </div>
+        <h1 class="text-base sm:text-lg font-bold tracking-tight text-slate-900">
+          Måltidsarkitekten <span class="text-emerald-600">AI</span>
+        </h1>
+      </div>
+
+      <!-- MAIN TOP TABS: MÅLTIDSPLAN vs MITT LAGER -->
+      <nav class="flex items-center gap-1 bg-slate-100 p-1 rounded-lg ml-2 sm:ml-4">
+        <button 
+          id="main-tab-plan-btn" 
+          class="px-3 py-1 text-xs font-bold rounded-md bg-white text-slate-900 shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
+        >
+          <i data-lucide="calendar" class="w-3.5 h-3.5 text-emerald-600"></i>
+          <span>Måltidsplan</span>
+        </button>
+        <button 
+          id="main-tab-inventory-btn" 
+          class="px-3 py-1 text-xs font-semibold rounded-md text-slate-600 hover:text-slate-900 flex items-center gap-1.5 transition-all cursor-pointer relative"
+        >
+          <i data-lucide="warehouse" class="w-3.5 h-3.5 text-emerald-600"></i>
+          <span>Mitt Lager</span>
+          <span id="inventory-badge-count" class="bg-emerald-600 text-white text-[9px] font-bold px-1.5 py-0.2 rounded-full">0</span>
+        </button>
+      </nav>
+    </div>
+
+    <!-- Header Stats & API Key Control -->
+    <div class="flex items-center gap-3 sm:gap-4">
+      
+      <!-- Calorie Summary Badge -->
+      <div class="flex flex-col items-end">
+        <span class="text-[9px] uppercase font-bold text-slate-400 leading-none">Dagsmål (±10%)</span>
+        <span class="text-sm sm:text-base font-mono font-bold leading-none text-slate-900" id="total-kcal-display">1500 <span class="text-xs font-normal text-slate-500">kcal</span></span>
+      </div>
+
+      <div class="h-6 w-px bg-slate-200 hidden sm:block"></div>
+
+      <!-- API Key Field -->
+      <div class="flex items-center gap-1.5">
+        <div class="relative w-32 sm:w-48">
+          <input 
+            type="password" 
+            id="api-key-input" 
+            placeholder="Gemini API Key..." 
+            class="w-full pl-2.5 pr-7 py-1 bg-slate-100 border border-slate-200 rounded text-xs focus:ring-1 focus:ring-emerald-500 focus:bg-white outline-none transition-all"
+          />
+          <button 
+            id="toggle-key-visibility" 
+            title="Vis/skjul nøkkel" 
+            class="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+          >
+            <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+
+        <button 
+          id="save-key-btn" 
+          title="Lagre nøkkel"
+          class="px-2.5 py-1 text-xs font-semibold text-white bg-slate-800 hover:bg-slate-900 rounded transition-colors flex items-center gap-1 shrink-0"
+        >
+          <i data-lucide="save" class="w-3 h-3"></i> <span class="hidden sm:inline">Lagre</span>
+        </button>
+
+        <button 
+          id="clear-key-btn" 
+          title="Slett nøkkel"
+          class="px-2 py-1 text-xs text-slate-500 hover:text-rose-600 border border-slate-200 rounded bg-slate-50 hover:bg-rose-50 transition-colors shrink-0"
+        >
+          <i data-lucide="trash-2" class="w-3 h-3"></i>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- Key Status Banner Strip -->
+  <div id="key-status-banner" class="bg-slate-100/80 border-b border-slate-200/60 px-6 py-1 text-[11px] text-slate-500 flex items-center justify-between no-print">
+    <div id="key-status-text" class="flex items-center gap-1.5">
+      <!-- Injected dynamically -->
+    </div>
+    <div class="hidden sm:flex items-center gap-3 text-[10px] text-slate-500">
+      <span class="flex items-center gap-1"><i data-lucide="box" class="w-3 h-3 text-emerald-600"></i> Lagerstyring synkronisert</span>
+      <span class="flex items-center gap-1"><i data-lucide="check-circle" class="w-3 h-3 text-emerald-600"></i> Auto-trekk ved laget måltid</span>
+      <span class="flex items-center gap-1"><i data-lucide="leaf" class="w-3 h-3 text-emerald-600"></i> Vegetar-alternativ (Kone)</span>
+    </div>
+  </div>
+
+  <!-- NOTIFICATION TOAST CONTAINER -->
+  <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- MAIN APP VIEW 1: MÅLTIDSPLAN -->
+  <div id="view-meal-plan" class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+    <!-- SIDEBAR CONFIGURATION PANEL (4 Cols) -->
+    <aside class="lg:col-span-4 bg-white border border-slate-200/80 rounded-xl p-4 sm:p-5 flex flex-col gap-5 shadow-2xs no-print h-fit">
+      
+      <!-- HEADER & PRESETS -->
+      <div class="space-y-2 border-b border-slate-100 pb-3">
+        <div class="flex items-center justify-between">
+          <label class="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+            <i data-lucide="sliders" class="w-3.5 h-3.5 text-emerald-600"></i> Måltidsprofil
+          </label>
+          <button id="load-example-btn" class="text-[11px] font-semibold text-emerald-700 hover:text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 flex items-center gap-1">
+            <i data-lucide="sparkles" class="w-3 h-3"></i> Eksempel
+          </button>
+        </div>
+
+        <div class="flex items-center gap-1.5">
+          <button id="preset-lowcarb-btn" class="flex-1 text-[11px] py-1 px-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded text-center transition-colors">
+            🔥 Lavkarbo
+          </button>
+          <button id="preset-balanced-btn" class="flex-1 text-[11px] py-1 px-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded text-center transition-colors">
+            🥗 Balansert
+          </button>
+        </div>
+      </div>
+
+      <!-- SECTION 1: KJØLESKAP & SPISKAMMERS (SYNCED WITH INVENTORY) -->
+      <section class="space-y-2">
+        <div class="flex items-center justify-between">
+          <label for="fridge-input" class="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+            <i data-lucide="refrigerator" class="w-3.5 h-3.5 text-emerald-600"></i> Kjøleskap & Spiskammers
+          </label>
+          <div class="flex items-center gap-2">
+            <button id="sync-from-inventory-btn" type="button" class="text-[11px] font-semibold text-emerald-700 hover:underline flex items-center gap-1" title="Hent automatisk alle Råvarer fra Mitt Lager">
+              <i data-lucide="rotate-cw" class="w-3 h-3"></i> Sync Lager
+            </button>
+            <button id="clear-fridge-btn" class="text-[11px] text-slate-400 hover:text-slate-600">Tøm</button>
+          </div>
+        </div>
+
+        <textarea 
+          id="fridge-input" 
+          rows="4" 
+          placeholder="Råvarer hentes automatisk fra 'Mitt Lager' eller skrives her..." 
+          class="w-full p-2.5 text-xs border border-slate-200 rounded-lg bg-slate-50 resize-none focus:ring-1 focus:ring-emerald-500 focus:bg-white outline-none font-sans"
+        ></textarea>
+
+        <!-- Quick Chips -->
+        <div class="flex flex-wrap gap-1" id="quick-chips">
+          <button type="button" class="chip-btn text-[10px] px-1.5 py-0.5 rounded bg-slate-100 hover:bg-emerald-100 hover:text-emerald-800 text-slate-600 transition-colors">+ Kylling</button>
+          <button type="button" class="chip-btn text-[10px] px-1.5 py-0.5 rounded bg-slate-100 hover:bg-emerald-100 hover:text-emerald-800 text-slate-600 transition-colors">+ Laks</button>
+          <button type="button" class="chip-btn text-[10px] px-1.5 py-0.5 rounded bg-slate-100 hover:bg-emerald-100 hover:text-emerald-800 text-slate-600 transition-colors">+ Halloumi</button>
+          <button type="button" class="chip-btn text-[10px] px-1.5 py-0.5 rounded bg-slate-100 hover:bg-emerald-100 hover:text-emerald-800 text-slate-600 transition-colors">+ Tofu</button>
+          <button type="button" class="chip-btn text-[10px] px-1.5 py-0.5 rounded bg-slate-100 hover:bg-emerald-100 hover:text-emerald-800 text-slate-600 transition-colors">+ Egg</button>
+          <button type="button" class="chip-btn text-[10px] px-1.5 py-0.5 rounded bg-slate-100 hover:bg-emerald-100 hover:text-emerald-800 text-slate-600 transition-colors">+ Brokkoli</button>
+          <button type="button" class="chip-btn text-[10px] px-1.5 py-0.5 rounded bg-slate-100 hover:bg-emerald-100 hover:text-emerald-800 text-slate-600 transition-colors">+ Wraps</button>
+        </div>
+      </section>
+
+      <!-- SECTION 2: DAGLIGE NÆRINGSMÅL (SLIDERS) -->
+      <section class="space-y-3 border-t border-slate-100 pt-3">
+        <div class="flex items-center justify-between">
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">Daglige Næringsmål</label>
+          <span class="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">±10% slingringsmonn</span>
+        </div>
+        
+        <div class="space-y-3">
+          <!-- Protein -->
+          <div class="space-y-1">
+            <div class="flex justify-between text-xs font-medium">
+              <span class="text-slate-700 font-semibold">Protein</span>
+              <span class="text-emerald-600 font-bold"><span id="protein-val">160</span>g <span class="text-slate-400 font-normal">(<span id="protein-kcal">640</span> kcal)</span></span>
+            </div>
+            <input 
+              type="range" 
+              id="slider-protein" 
+              min="50" 
+              max="300" 
+              step="5" 
+              value="160" 
+              class="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-emerald-600"
+            />
+          </div>
+
+          <!-- Karbohydrater -->
+          <div class="space-y-1">
+            <div class="flex justify-between text-xs font-medium">
+              <span class="text-slate-700 font-semibold">Karbohydrater</span>
+              <span class="text-blue-600 font-bold"><span id="carbs-val">80</span>g <span class="text-slate-400 font-normal">(<span id="carbs-kcal">320</span> kcal)</span></span>
+            </div>
+            <input 
+              type="range" 
+              id="slider-carbs" 
+              min="20" 
+              max="300" 
+              step="5" 
+              value="80" 
+              class="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+            />
+          </div>
+
+          <!-- Fett -->
+          <div class="space-y-1">
+            <div class="flex justify-between text-xs font-medium">
+              <span class="text-slate-700 font-semibold">Fett</span>
+              <span class="text-amber-600 font-bold"><span id="fat-val">60</span>g <span class="text-slate-400 font-normal">(<span id="fat-kcal">540</span> kcal)</span></span>
+            </div>
+            <input 
+              type="range" 
+              id="slider-fat" 
+              min="20" 
+              max="200" 
+              step="5" 
+              value="60" 
+              class="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-amber-600"
+            />
+          </div>
+        </div>
+
+        <!-- Macro Percentages Progress Bar -->
+        <div class="pt-1">
+          <div class="flex justify-between text-[10px] text-slate-500 mb-1 font-mono">
+            <span>Fordeling:</span>
+            <span id="macro-pct-text">43% P · 21% K · 36% F</span>
+          </div>
+          <div class="h-1.5 w-full rounded-full bg-slate-100 overflow-hidden flex">
+            <div id="bar-protein" class="bg-emerald-600 h-full transition-all" style="width: 43%"></div>
+            <div id="bar-carbs" class="bg-blue-600 h-full transition-all" style="width: 21%"></div>
+            <div id="bar-fat" class="bg-amber-600 h-full transition-all" style="width: 36%"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 3: PORSJONER (MEAL-SPECIFIC) -->
+      <section class="space-y-2 border-t border-slate-100 pt-3">
+        <div class="flex items-center justify-between">
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider">Standard Porsjoner</label>
+          <span class="text-[10px] text-slate-400 font-medium">Gjelder alle måltider</span>
+        </div>
+        
+        <select 
+          id="global-persons" 
+          class="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-800 outline-none focus:bg-white focus:ring-1 focus:ring-emerald-500"
+        >
+          <option value="1">1 Person</option>
+          <option value="2" selected>2 Personer</option>
+          <option value="3">3 Personer</option>
+          <option value="4">4 Personer</option>
+          <option value="5">5 Personer</option>
+          <option value="6">6 Personer</option>
+        </select>
+
+        <!-- Per Day / Per Meal Override Toggle -->
+        <div>
+          <button 
+            id="toggle-days-override-btn" 
+            type="button" 
+            class="w-full flex items-center justify-between text-xs font-semibold text-emerald-700 hover:text-emerald-800 py-1"
+          >
+            <span class="flex items-center gap-1">
+              <i data-lucide="users" class="w-3.5 h-3.5"></i> Tilpass Lunsj & Middag per dag
+            </span>
+            <i id="override-chevron" data-lucide="chevron-down" class="w-3.5 h-3.5 transition-transform"></i>
+          </button>
+
+          <div id="days-override-container" class="hidden mt-2 space-y-2 text-xs bg-slate-50 p-2.5 rounded-lg border border-slate-200/60 max-h-64 overflow-y-auto">
+            <p class="text-[10px] text-slate-500 mb-1">Velg ulikt antall personer for Lunsj og Middag per dag:</p>
+            <div class="space-y-1.5" id="days-inputs-grid">
+              <!-- Injected via JavaScript -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- GENERATE BUTTON -->
+      <div class="pt-2 space-y-2">
+        <button 
+          id="generate-plan-btn" 
+          class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition-all shadow-md shadow-emerald-200 flex items-center justify-center gap-2 text-sm cursor-pointer"
+        >
+          <i data-lucide="wand-2" class="w-4 h-4"></i>
+          <span>Generer Måltidsplan</span>
+        </button>
+      </div>
+
+    </aside>
+
+    <!-- MAIN CONTENT VIEW (8 Cols) -->
+    <main class="lg:col-span-8 space-y-5">
+
+      <!-- LOADING SPINNER MODAL / OVERLAY -->
+      <div id="loading-overlay" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 text-center space-y-4 shadow-2xl border border-slate-100">
+          <div class="relative w-14 h-14 mx-auto flex items-center justify-center">
+            <div class="absolute inset-0 rounded-full border-4 border-emerald-200 border-t-emerald-600 animate-spin"></div>
+            <i data-lucide="chef-hat" class="w-7 h-7 text-emerald-600"></i>
+          </div>
+          
+          <div>
+            <h3 class="text-base font-bold text-slate-900">Sammensetter måltidsplanen...</h3>
+            <p id="loading-step-text" class="text-xs text-slate-500 mt-1">Analyser ingredienser, matpakke-lunsjer og vegetar-alternativer...</p>
+          </div>
+
+          <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+            <div id="loading-progress-bar" class="bg-emerald-600 h-full w-1/3 transition-all duration-500"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ERROR DISPLAY CONTAINER -->
+      <div id="error-container" class="hidden bg-rose-50 border border-rose-200 text-rose-800 p-4 rounded-xl text-xs space-y-1">
+        <div class="flex items-center gap-2 font-bold text-sm text-rose-900">
+          <i data-lucide="alert-triangle" class="w-4 h-4 text-rose-600"></i> Det oppstod en feil
+        </div>
+        <p id="error-text">Klarte ikke å koble til Gemini API.</p>
+      </div>
+
+      <!-- EMPTY STATE PLACEHOLDER -->
+      <div id="empty-state-placeholder" class="bg-white border border-slate-200/80 rounded-xl p-8 text-center space-y-3 shadow-2xs">
+        <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center mx-auto">
+          <i data-lucide="sparkles" class="w-6 h-6"></i>
+        </div>
+        <h3 class="text-base font-bold text-slate-800">Klar til å generere din måltidsplan</h3>
+        <p class="text-xs text-slate-500 max-w-md mx-auto">
+          Tilpass porsjoner per måltid (lunsj vs. middag), og trykk på <strong>«Generer Måltidsplan»</strong>. Du kan også håndtere ditt eget lager i «Mitt Lager»-fanen!
+        </p>
+      </div>
+
+      <!-- RESULTS SECTION -->
+      <section id="results-section" class="hidden space-y-5">
+
+        <!-- RESULTS TOOLBAR / TABS -->
+        <div class="bg-white p-3 rounded-xl border border-slate-200/80 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 no-print">
+          
+          <!-- Navigation Tabs & Global Vegetarian Switch -->
+          <div class="flex flex-wrap items-center gap-2">
+            <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-lg">
+              <button id="tab-plan-btn" class="tab-btn px-3 py-1.5 rounded text-xs font-bold text-slate-800 bg-white shadow-xs flex items-center gap-1.5 transition-all">
+                <i data-lucide="calendar-days" class="w-3.5 h-3.5 text-emerald-600"></i> Ukesplan
+              </button>
+              <button id="tab-grocery-btn" class="tab-btn px-3 py-1.5 rounded text-xs font-semibold text-slate-600 hover:text-slate-900 flex items-center gap-1.5 transition-all">
+                <i data-lucide="shopping-cart" class="w-3.5 h-3.5 text-emerald-600"></i> Handleliste
+              </button>
+            </div>
+
+            <!-- Global Vegetarian Mode Toggle Button -->
+            <button 
+              id="global-veg-toggle-btn" 
+              type="button" 
+              class="px-3 py-1.5 text-xs font-bold rounded-lg border transition-all flex items-center gap-1.5 bg-slate-50 hover:bg-emerald-50 text-slate-700 border-slate-200 cursor-pointer"
+            >
+              <i data-lucide="leaf" class="w-3.5 h-3.5 text-emerald-600"></i>
+              <span>🌱 Vegetar-modus for alle (Kone)</span>
+            </button>
+          </div>
+
+          <!-- PDF Export & Print Buttons -->
+          <div class="flex items-center gap-2">
+            <button 
+              id="download-pdf-btn" 
+              class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              <i data-lucide="file-text" class="w-3.5 h-3.5 text-emerald-400"></i> PDF Eksport
+            </button>
+            
+            <button 
+              id="print-btn" 
+              class="p-1.5 border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-lg text-xs transition-colors cursor-pointer"
+              title="Skriv ut"
+            >
+              <i data-lucide="printer" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+
+        </div>
+
+        <!-- EXPORTABLE CONTENT CONTAINER -->
+        <div id="pdf-export-content" class="space-y-6">
+
+          <!-- PRINT HEADER -->
+          <div class="hidden print:block mb-4 border-b border-slate-300 pb-3">
+            <h1 class="text-xl font-bold text-slate-900">Måltidsarkitekten AI · Ukentlig Plan</h1>
+            <p class="text-xs text-slate-600 mt-0.5">Dagsmål: <span id="print-kcal-target">1500 kcal/dag</span> (±10% slingringsmonn)</p>
+          </div>
+
+          <!-- TAB 1: UKESPLAN -->
+          <div id="tab-plan-content" class="space-y-5">
+
+            <!-- Day Selector Pills -->
+            <div class="flex items-center gap-1.5 overflow-x-auto pb-1 no-print" id="day-nav-pills">
+              <!-- Injected via JS -->
+            </div>
+
+            <!-- Days List -->
+            <div class="space-y-5" id="weekly-days-list">
+              <!-- Injected via JS -->
+            </div>
+
+          </div>
+
+          <!-- TAB 2: HANDLELISTE -->
+          <div id="tab-grocery-content" class="hidden space-y-5">
+
+            <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-2xs space-y-5">
+              
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                <div>
+                  <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                    <i data-lucide="shopping-bag" class="w-4 h-4 text-emerald-600"></i> Handleliste for uken
+                  </h3>
+                  <p class="text-xs text-slate-500">Inkluderer alle oppskrifter og vegetar-alternativer (Kone)</p>
+                </div>
+
+                <div class="flex items-center gap-2">
+                  <!-- Add Bought Items to Inventory Button -->
+                  <button 
+                    id="add-bought-to-inventory-btn" 
+                    class="px-3 py-1.5 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                  >
+                    <i data-lucide="archive-restore" class="w-3.5 h-3.5"></i>
+                    <span>Legg kjøpte varer til i lageret</span>
+                  </button>
+
+                  <!-- Custom Add Item -->
+                  <div class="flex items-center gap-1.5 no-print">
+                    <input 
+                      type="text" 
+                      id="custom-item-input" 
+                      placeholder="Legg til vare..." 
+                      class="text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                    />
+                    <button 
+                      id="add-custom-item-btn" 
+                      class="px-2.5 py-1.5 text-xs font-semibold bg-slate-800 hover:bg-slate-900 text-white rounded-lg transition-colors shrink-0"
+                    >
+                      + Legg til
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Grocery List Progress -->
+              <div class="no-print space-y-1">
+                <div class="flex justify-between text-xs text-slate-500 font-medium">
+                  <span>Avkryssede varer:</span>
+                  <span id="grocery-progress-text">0 / 0 varer</span>
+                </div>
+                <div class="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                  <div id="grocery-progress-bar" class="bg-emerald-500 h-full w-0 transition-all"></div>
+                </div>
+              </div>
+
+              <!-- Categories Grid -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="grocery-categories-grid">
+                <!-- Injected via JS -->
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+    </main>
+
+  </div>
+
+  <!-- MAIN APP VIEW 2: MITT LAGER / SPISKAMMERS (INVENTORY MANAGEMENT) -->
+  <div id="view-inventory" class="hidden flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6">
+
+    <!-- INVENTORY BANNER & STATS -->
+    <div class="bg-white border border-slate-200/80 rounded-xl p-5 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div class="space-y-1">
+        <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+          <i data-lucide="warehouse" class="w-5 h-5 text-emerald-600"></i>
+          <span>Mitt Lager & Spiskammers</span>
+        </h2>
+        <p class="text-xs text-slate-500">
+          Beholdningsmåleren herfra brukes automatisk når du genererer ukesplaner, og oppdateres automatisk når måltider markeres som laget!
+        </p>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <div class="bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg text-center">
+          <span class="block text-[10px] text-slate-400 font-bold uppercase">Totalt i Lager</span>
+          <span id="stat-total-items" class="text-base font-bold text-slate-800 font-mono">0 varer</span>
+        </div>
+        <div class="bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-lg text-center">
+          <span class="block text-[10px] text-emerald-600 font-bold uppercase">Status</span>
+          <span class="text-xs font-bold text-emerald-800">Aktiv Sync</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ADD INVENTORY ITEM FORM & QUICK TEMPLATES -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+      <!-- ADD ITEM CARD (5 Cols) -->
+      <div class="lg:col-span-5 bg-white border border-slate-200/80 rounded-xl p-5 space-y-4 shadow-2xs h-fit">
+        <h3 class="text-sm font-bold text-slate-800 flex items-center gap-1.5 border-b border-slate-100 pb-2">
+          <i data-lucide="plus-circle" class="w-4 h-4 text-emerald-600"></i> Legg til ny ingrediens i lageret
+        </h3>
+
+        <form id="add-inventory-form" class="space-y-3">
+          <div>
+            <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Ingrediensnavn</label>
+            <input 
+              type="text" 
+              id="inv-name" 
+              placeholder="F.eks. Kyllingbryst, Laks, Egg, Brokkoli..." 
+              required
+              class="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:ring-1 focus:ring-emerald-500 outline-none"
+            />
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Mengde</label>
+              <input 
+                type="number" 
+                id="inv-qty" 
+                step="any" 
+                min="0.1" 
+                placeholder="f.eks. 800 eller 4" 
+                required
+                class="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:ring-1 focus:ring-emerald-500 outline-none font-mono"
+              />
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Enhet</label>
+              <select 
+                id="inv-unit" 
+                class="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:ring-1 focus:ring-emerald-500 outline-none font-bold"
+              >
+                <option value="g">gram (g)</option>
+                <option value="kg">kilo (kg)</option>
+                <option value="stk">stk</option>
+                <option value="pk">pakker (pk)</option>
+                <option value="boks">bokser</option>
+                <option value="dl">dl / ml</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Kategori</label>
+            <select 
+              id="inv-category" 
+              class="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:ring-1 focus:ring-emerald-500 outline-none font-semibold text-slate-700"
+            >
+              <option value="Kjøtt & Fisk">Kjøtt & Fisk</option>
+              <option value="Grønnsaker & Frukt">Grønnsaker & Frukt</option>
+              <option value="Meieri & Egg">Meieri & Egg</option>
+              <option value="Tørrvarer & Hermetikk">Tørrvarer & Hermetikk</option>
+              <option value="Vegetar-alternativer (Kone)">Vegetar-alternativer (Kone)</option>
+              <option value="Krydder, Oljer & Sauser">Krydder, Oljer & Sauser</option>
+            </select>
+          </div>
+
+          <button 
+            type="submit" 
+            class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg transition-colors flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
+          >
+            <i data-lucide="check" class="w-4 h-4"></i> Legg til i Lageret
+          </button>
+        </form>
+
+        <!-- PRE-POPULATE DEFAULT PANTRY BUTTON -->
+        <div class="border-t border-slate-100 pt-3">
+          <button 
+            id="reset-default-inventory-btn" 
+            class="w-full py-1.5 border border-slate-200 hover:bg-slate-100 text-slate-600 text-xs font-semibold rounded-lg transition-colors flex items-center justify-center gap-1"
+          >
+            <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-500"></i> Fyll ut standard norsk baselager
+          </button>
+        </div>
+      </div>
+
+      <!-- INVENTORY LISTING (7 Cols) -->
+      <div class="lg:col-span-7 bg-white border border-slate-200/80 rounded-xl p-5 space-y-4 shadow-2xs">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+          <h3 class="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+            <i data-lucide="list" class="w-4 h-4 text-emerald-600"></i> Registrerte Råvarer
+          </h3>
+          <div class="flex items-center gap-2">
+            <input 
+              type="text" 
+              id="inventory-search" 
+              placeholder="Søk i lageret..." 
+              class="text-xs px-2.5 py-1 border border-slate-200 rounded-lg bg-slate-50 focus:bg-white outline-none"
+            />
+            <button id="clear-all-inventory-btn" class="text-[11px] text-rose-600 hover:underline">Tøm alt</button>
+          </div>
+        </div>
+
+        <div id="inventory-list-container" class="space-y-4 max-h-[500px] overflow-y-auto pr-1">
+          <!-- Injected via JavaScript -->
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="mt-auto border-t border-slate-200 bg-white py-3 text-center text-xs text-slate-400 no-print">
+    <div class="max-w-7xl mx-auto px-4">
+      <p>© 2026 Måltidsarkitekten AI · Powered by Google Gemini</p>
+    </div>
+  </footer>
+
+  <!-- APPLICATION LOGIC SCRIPT -->
+  <script>
+    // --- STATE MANAGEMENT ---
+    const DAYS_LIST = ["Mandag", "Tirsdag", "Onsdag", "Torsdag", "Fredag", "Lørdag", "Søndag"];
+
+    // Default inventory items for quick start
+    const DEFAULT_INVENTORY = [
+      { id: '1', name: 'Laks', qty: 500, unit: 'g', category: 'Kjøtt & Fisk' },
+      { id: '2', name: 'Kyllingbryst', qty: 800, unit: 'g', category: 'Kjøtt & Fisk' },
+      { id: '3', name: 'Egg', qty: 12, unit: 'stk', category: 'Meieri & Egg' },
+      { id: '4', name: 'Brokkoli', qty: 2, unit: 'stk', category: 'Grønnsaker & Frukt' },
+      { id: '5', name: 'Søtpotet', qty: 600, unit: 'g', category: 'Grønnsaker & Frukt' },
+      { id: '6', name: 'Fullkornswraps', qty: 6, unit: 'stk', category: 'Tørrvarer & Hermetikk' },
+      { id: '7', name: 'Avokado', qty: 3, unit: 'stk', category: 'Grønnsaker & Frukt' },
+      { id: '8', name: 'Gresk Yoghurt', qty: 500, unit: 'g', category: 'Meieri & Egg' },
+      { id: '9', name: 'Halloumi', qty: 400, unit: 'g', category: 'Vegetar-alternativer (Kone)' },
+      { id: '10', name: 'Tofu', qty: 250, unit: 'g', category: 'Vegetar-alternativer (Kone)' }
+    ];
+
+    let state = {
+      activeMainTab: 'plan', // 'plan' or 'inventory'
+      apiKey: localStorage.getItem('gemini_api_key') || '',
+      fridge: localStorage.getItem('mealplan_fridge') || '',
+      defaultPersons: parseInt(localStorage.getItem('mealplan_persons')) || 2,
+      dailyMealPersons: JSON.parse(localStorage.getItem('mealplan_daily_meal_persons') || '{}'),
+      protein: parseInt(localStorage.getItem('mealplan_protein')) || 160,
+      carbs: parseInt(localStorage.getItem('mealplan_carbs')) || 80,
+      fat: parseInt(localStorage.getItem('mealplan_fat')) || 60,
+      generatedData: JSON.parse(localStorage.getItem('mealplan_data') || 'null'),
+      checkedItems: JSON.parse(localStorage.getItem('mealplan_checked_items') || '{}'),
+      globalVegetarian: JSON.parse(localStorage.getItem('mealplan_global_veg') || 'false'),
+      mealVegetarianState: JSON.parse(localStorage.getItem('mealplan_meal_veg') || '{}'),
+      customGroceryItems: JSON.parse(localStorage.getItem('mealplan_custom_grocery') || '[]'),
+      completedMeals: JSON.parse(localStorage.getItem('mealplan_completed_meals') || '{}'),
+      inventory: JSON.parse(localStorage.getItem('mealplan_inventory') || 'null') || DEFAULT_INVENTORY,
+      loadingMeals: {} // track single meal regeneration loading
+    };
+
+    // Ensure all days have meal persons initialized
+    DAYS_LIST.forEach(d => {
+      if (!state.dailyMealPersons[d]) {
+        state.dailyMealPersons[d] = {
+          lunch: state.defaultPersons,
+          dinner: state.defaultPersons
+        };
+      }
+    });
+
+    // --- DOM ELEMENTS ---
+    const mainTabPlanBtn = document.getElementById('main-tab-plan-btn');
+    const mainTabInventoryBtn = document.getElementById('main-tab-inventory-btn');
+    const viewMealPlan = document.getElementById('view-meal-plan');
+    const viewInventory = document.getElementById('view-inventory');
+    const inventoryBadgeCount = document.getElementById('inventory-badge-count');
+
+    const apiKeyInput = document.getElementById('api-key-input');
+    const toggleKeyBtn = document.getElementById('toggle-key-visibility');
+    const saveKeyBtn = document.getElementById('save-key-btn');
+    const clearKeyBtn = document.getElementById('clear-key-btn');
+    const keyStatusBanner = document.getElementById('key-status-banner');
+    const keyStatusText = document.getElementById('key-status-text');
+
+    const fridgeInput = document.getElementById('fridge-input');
+    const clearFridgeBtn = document.getElementById('clear-fridge-btn');
+    const syncFromInventoryBtn = document.getElementById('sync-from-inventory-btn');
+    const globalPersonsSelect = document.getElementById('global-persons');
+    const toggleDaysOverrideBtn = document.getElementById('toggle-days-override-btn');
+    const daysOverrideContainer = document.getElementById('days-override-container');
+    const daysInputsGrid = document.getElementById('days-inputs-grid');
+
+    const sliderProtein = document.getElementById('slider-protein');
+    const sliderCarbs = document.getElementById('slider-carbs');
+    const sliderFat = document.getElementById('slider-fat');
+
+    const proteinVal = document.getElementById('protein-val');
+    const carbsVal = document.getElementById('carbs-val');
+    const fatVal = document.getElementById('fat-val');
+
+    const proteinKcal = document.getElementById('protein-kcal');
+    const carbsKcal = document.getElementById('carbs-kcal');
+    const fatKcal = document.getElementById('fat-kcal');
+
+    const totalKcalDisplay = document.getElementById('total-kcal-display');
+    const printKcalTarget = document.getElementById('print-kcal-target');
+    const macroPctText = document.getElementById('macro-pct-text');
+
+    const barProtein = document.getElementById('bar-protein');
+    const barCarbs = document.getElementById('bar-carbs');
+    const barFat = document.getElementById('bar-fat');
+
+    const presetLowcarbBtn = document.getElementById('preset-lowcarb-btn');
+    const presetBalancedBtn = document.getElementById('preset-balanced-btn');
+    const loadExampleBtn = document.getElementById('load-example-btn');
+    const generatePlanBtn = document.getElementById('generate-plan-btn');
+
+    const loadingOverlay = document.getElementById('loading-overlay');
+    const loadingStepText = document.getElementById('loading-step-text');
+    const loadingProgressBar = document.getElementById('loading-progress-bar');
+    const errorContainer = document.getElementById('error-container');
+    const errorText = document.getElementById('error-text');
+
+    const emptyStatePlaceholder = document.getElementById('empty-state-placeholder');
+    const resultsSection = document.getElementById('results-section');
+    const tabPlanBtn = document.getElementById('tab-plan-btn');
+    const tabGroceryBtn = document.getElementById('tab-grocery-btn');
+    const tabPlanContent = document.getElementById('tab-plan-content');
+    const tabGroceryContent = document.getElementById('tab-grocery-content');
+    const globalVegToggleBtn = document.getElementById('global-veg-toggle-btn');
+
+    const weeklyDaysList = document.getElementById('weekly-days-list');
+    const dayNavPills = document.getElementById('day-nav-pills');
+    const groceryCategoriesGrid = document.getElementById('grocery-categories-grid');
+    const customItemInput = document.getElementById('custom-item-input');
+    const addCustomItemBtn = document.getElementById('add-custom-item-btn');
+    const addBoughtToInventoryBtn = document.getElementById('add-bought-to-inventory-btn');
+    const groceryProgressText = document.getElementById('grocery-progress-text');
+    const groceryProgressBar = document.getElementById('grocery-progress-bar');
+
+    const downloadPdfBtn = document.getElementById('download-pdf-btn');
+    const printBtn = document.getElementById('print-btn');
+
+    // Inventory DOM elements
+    const addInventoryForm = document.getElementById('add-inventory-form');
+    const invName = document.getElementById('inv-name');
+    const invQty = document.getElementById('inv-qty');
+    const invUnit = document.getElementById('inv-unit');
+    const invCategory = document.getElementById('inv-category');
+    const inventoryListContainer = document.getElementById('inventory-list-container');
+    const statTotalItems = document.getElementById('stat-total-items');
+    const inventorySearch = document.getElementById('inventory-search');
+    const resetDefaultInventoryBtn = document.getElementById('reset-default-inventory-btn');
+    const clearAllInventoryBtn = document.getElementById('clear-all-inventory-btn');
+
+    // --- INIT APP ---
+    function init() {
+      if (state.apiKey) apiKeyInput.value = state.apiKey;
+      
+      // Auto-sync fridge input from inventory if empty
+      if (!state.fridge) {
+        state.fridge = generateFridgeTextFromInventory();
+      }
+      fridgeInput.value = state.fridge;
+
+      globalPersonsSelect.value = state.defaultPersons;
+
+      sliderProtein.value = state.protein;
+      sliderCarbs.value = state.carbs;
+      sliderFat.value = state.fat;
+
+      renderKeyStatus();
+      renderDaysOverrideInputs();
+      calculateNutrition();
+      updateGlobalVegButtonUI();
+      renderInventoryList();
+
+      // Quick add chips listener
+      document.querySelectorAll('.chip-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const item = btn.innerText.replace('+', '').trim();
+          if (fridgeInput.value.includes(item)) return;
+          fridgeInput.value = fridgeInput.value 
+            ? fridgeInput.value.trim() + ', ' + item 
+            : item;
+          saveState();
+        });
+      });
+
+      // Render cached plan
+      if (state.generatedData) {
+        renderGeneratedPlan(state.generatedData);
+      }
+
+      if (window.lucide) lucide.createIcons();
+    }
+
+    // --- TOAST NOTIFICATIONS ---
+    function showToast(msg, type = 'success') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = `pointer-events-auto px-4 py-2.5 rounded-xl shadow-lg border text-xs font-bold flex items-center gap-2 transition-all transform translate-y-2 opacity-0 ${
+        type === 'success' ? 'bg-slate-900 text-white border-slate-800' : 'bg-rose-600 text-white border-rose-700'
+      }`;
+      toast.innerHTML = `<i data-lucide="${type === 'success' ? 'check-circle' : 'alert-circle'}" class="w-4 h-4 text-emerald-400"></i> <span>${msg}</span>`;
+      container.appendChild(toast);
+      if (window.lucide) lucide.createIcons();
+
+      setTimeout(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      }, 50);
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    // --- TOP MAIN TABS SWITCHING ---
+    mainTabPlanBtn.addEventListener('click', () => {
+      state.activeMainTab = 'plan';
+      mainTabPlanBtn.className = "px-3 py-1 text-xs font-bold rounded-md bg-white text-slate-900 shadow-xs flex items-center gap-1.5 transition-all cursor-pointer";
+      mainTabInventoryBtn.className = "px-3 py-1 text-xs font-semibold rounded-md text-slate-600 hover:text-slate-900 flex items-center gap-1.5 transition-all cursor-pointer relative";
+      viewMealPlan.classList.remove('hidden');
+      viewInventory.classList.add('hidden');
+    });
+
+    mainTabInventoryBtn.addEventListener('click', () => {
+      state.activeMainTab = 'inventory';
+      mainTabInventoryBtn.className = "px-3 py-1 text-xs font-bold rounded-md bg-white text-slate-900 shadow-xs flex items-center gap-1.5 transition-all cursor-pointer relative";
+      mainTabPlanBtn.className = "px-3 py-1 text-xs font-semibold rounded-md text-slate-600 hover:text-slate-900 flex items-center gap-1.5 transition-all cursor-pointer";
+      viewInventory.classList.remove('hidden');
+      viewMealPlan.classList.add('hidden');
+      renderInventoryList();
+    });
+
+    // Sync fridge text from inventory list
+    function generateFridgeTextFromInventory() {
+      if (!state.inventory || state.inventory.length === 0) return '';
+      return state.inventory.map(i => `${i.qty}${i.unit} ${i.name}`).join(', ');
+    }
+
+    syncFromInventoryBtn.addEventListener('click', () => {
+      fridgeInput.value = generateFridgeTextFromInventory();
+      saveState();
+      showToast("Kjøleskaptekst synkronisert fra Mitt Lager!", "success");
+    });
+
+    // --- CALCULATE NUTRITION & CALORIES ---
+    function calculateNutrition() {
+      const p = parseInt(sliderProtein.value);
+      const c = parseInt(sliderCarbs.value);
+      const f = parseInt(sliderFat.value);
+
+      state.protein = p;
+      state.carbs = c;
+      state.fat = f;
+
+      const pKcal = p * 4;
+      const cKcal = c * 4;
+      const fKcal = f * 9;
+      const totalKcal = pKcal + cKcal + fKcal;
+
+      proteinVal.innerText = p;
+      carbsVal.innerText = c;
+      fatVal.innerText = f;
+
+      proteinKcal.innerText = pKcal;
+      carbsKcal.innerText = cKcal;
+      fatKcal.innerText = fKcal;
+
+      totalKcalDisplay.innerHTML = `${totalKcal} <span class="text-xs font-normal text-slate-500">kcal</span>`;
+      printKcalTarget.innerText = `${totalKcal} kcal/dag`;
+
+      const pPct = Math.round((pKcal / totalKcal) * 100);
+      const cPct = Math.round((cKcal / totalKcal) * 100);
+      const fPct = 100 - pPct - cPct;
+
+      macroPctText.innerText = `${pPct}% P · ${cPct}% K · ${fPct}% F`;
+      barProtein.style.width = `${pPct}%`;
+      barCarbs.style.width = `${cPct}%`;
+      barFat.style.width = `${fPct}%`;
+
+      saveState();
+    }
+
+    // --- SAVE LOCAL STATE ---
+    function saveState() {
+      localStorage.setItem('gemini_api_key', state.apiKey);
+      localStorage.setItem('mealplan_fridge', fridgeInput.value);
+      localStorage.setItem('mealplan_persons', globalPersonsSelect.value);
+      localStorage.setItem('mealplan_daily_meal_persons', JSON.stringify(state.dailyMealPersons));
+      localStorage.setItem('mealplan_protein', sliderProtein.value);
+      localStorage.setItem('mealplan_carbs', sliderCarbs.value);
+      localStorage.setItem('mealplan_fat', sliderFat.value);
+      if (state.generatedData) {
+        localStorage.setItem('mealplan_data', JSON.stringify(state.generatedData));
+      }
+      localStorage.setItem('mealplan_checked_items', JSON.stringify(state.checkedItems));
+      localStorage.setItem('mealplan_global_veg', JSON.stringify(state.globalVegetarian));
+      localStorage.setItem('mealplan_meal_veg', JSON.stringify(state.mealVegetarianState));
+      localStorage.setItem('mealplan_custom_grocery', JSON.stringify(state.customGroceryItems));
+      localStorage.setItem('mealplan_completed_meals', JSON.stringify(state.completedMeals));
+      localStorage.setItem('mealplan_inventory', JSON.stringify(state.inventory));
+
+      // Update inventory badge count
+      if (inventoryBadgeCount) {
+        inventoryBadgeCount.innerText = state.inventory ? state.inventory.length : 0;
+      }
+    }
+
+    // --- RENDER KEY STATUS BANNER ---
+    function renderKeyStatus() {
+      if (state.apiKey) {
+        keyStatusText.innerHTML = `
+          <span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
+          <span class="text-emerald-700 font-semibold">Manuell Gemini API-nøkkel er aktiv.</span>
+        `;
+      } else {
+        keyStatusText.innerHTML = `
+          <span class="inline-block w-2 h-2 rounded-full bg-sky-500"></span>
+          <span class="text-slate-500">Ingen nøkkel lagret. Bruker automatisk server-API.</span>
+        `;
+      }
+    }
+
+    // --- RENDER DAYS OVERRIDE INPUTS (LUNSJ & MIDDAG SEPARAT) ---
+    function renderDaysOverrideInputs() {
+      daysInputsGrid.innerHTML = '';
+      DAYS_LIST.forEach(day => {
+        const mealPersons = state.dailyMealPersons[day] || { lunch: state.defaultPersons, dinner: state.defaultPersons };
+        const div = document.createElement('div');
+        div.className = 'bg-white p-2 rounded-lg border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2';
+        div.innerHTML = `
+          <span class="font-bold text-slate-800 text-xs w-20">${day}:</span>
+          <div class="flex items-center gap-3">
+            <div class="flex items-center gap-1">
+              <span class="text-[10px] text-slate-500 font-medium">Lunsj:</span>
+              <select data-day="${day}" data-meal="lunch" class="meal-override-select text-[11px] font-bold text-slate-800 bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                ${[1,2,3,4,5,6,7,8,9,10].map(n => `<option value="${n}" ${n === mealPersons.lunch ? 'selected' : ''}>${n} pers</option>`).join('')}
+              </select>
+            </div>
+            <div class="flex items-center gap-1">
+              <span class="text-[10px] text-slate-500 font-medium">Middag:</span>
+              <select data-day="${day}" data-meal="dinner" class="meal-override-select text-[11px] font-bold text-slate-800 bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                ${[1,2,3,4,5,6,7,8,9,10].map(n => `<option value="${n}" ${n === mealPersons.dinner ? 'selected' : ''}>${n} pers</option>`).join('')}
+              </select>
+            </div>
+          </div>
+        `;
+        daysInputsGrid.appendChild(div);
+      });
+
+      document.querySelectorAll('.meal-override-select').forEach(sel => {
+        sel.addEventListener('change', (e) => {
+          const d = e.target.getAttribute('data-day');
+          const m = e.target.getAttribute('data-meal');
+          if (!state.dailyMealPersons[d]) state.dailyMealPersons[d] = { lunch: state.defaultPersons, dinner: state.defaultPersons };
+          state.dailyMealPersons[d][m] = parseInt(e.target.value);
+          saveState();
+        });
+      });
+    }
+
+    // --- EVENT LISTENERS ---
+    toggleKeyBtn.addEventListener('click', () => {
+      const isPass = apiKeyInput.type === 'password';
+      apiKeyInput.type = isPass ? 'text' : 'password';
+      toggleKeyBtn.innerHTML = `<i data-lucide="${isPass ? 'eye-off' : 'eye'}" class="w-3.5 h-3.5"></i>`;
+      if (window.lucide) lucide.createIcons();
+    });
+
+    saveKeyBtn.addEventListener('click', () => {
+      state.apiKey = apiKeyInput.value.trim();
+      saveState();
+      renderKeyStatus();
+    });
+
+    clearKeyBtn.addEventListener('click', () => {
+      state.apiKey = '';
+      apiKeyInput.value = '';
+      saveState();
+      renderKeyStatus();
+    });
+
+    clearFridgeBtn.addEventListener('click', () => {
+      fridgeInput.value = '';
+      saveState();
+    });
+
+    globalPersonsSelect.addEventListener('change', () => {
+      const newDef = parseInt(globalPersonsSelect.value);
+      state.defaultPersons = newDef;
+      DAYS_LIST.forEach(d => {
+        state.dailyMealPersons[d] = { lunch: newDef, dinner: newDef };
+      });
+      renderDaysOverrideInputs();
+      saveState();
+    });
+
+    toggleDaysOverrideBtn.addEventListener('click', () => {
+      const isHidden = daysOverrideContainer.classList.contains('hidden');
+      if (isHidden) {
+        daysOverrideContainer.classList.remove('hidden');
+        document.getElementById('override-chevron').style.transform = 'rotate(180deg)';
+      } else {
+        daysOverrideContainer.classList.add('hidden');
+        document.getElementById('override-chevron').style.transform = 'rotate(0deg)';
+      }
+    });
+
+    [sliderProtein, sliderCarbs, sliderFat].forEach(s => {
+      s.addEventListener('input', calculateNutrition);
+    });
+
+    presetLowcarbBtn.addEventListener('click', () => {
+      sliderProtein.value = 180;
+      sliderCarbs.value = 50;
+      sliderFat.value = 60;
+      calculateNutrition();
+    });
+
+    presetBalancedBtn.addEventListener('click', () => {
+      sliderProtein.value = 140;
+      sliderCarbs.value = 120;
+      sliderFat.value = 60;
+      calculateNutrition();
+    });
+
+    loadExampleBtn.addEventListener('click', () => {
+      fridgeInput.value = "Laks, Kyllingbryst, Egg, Brokkoli, Fullkornsris, Avokado, Spinat, Gresk Yoghurt, Valnøtter, Søtpotet, Halloumi, Tofu, Wraps";
+      sliderProtein.value = 160;
+      sliderCarbs.value = 80;
+      sliderFat.value = 60;
+      calculateNutrition();
+      saveState();
+    });
+
+    // Toggle global vegetarian state
+    globalVegToggleBtn.addEventListener('click', () => {
+      state.globalVegetarian = !state.globalVegetarian;
+      saveState();
+      updateGlobalVegButtonUI();
+      if (state.generatedData) {
+        renderGeneratedPlan(state.generatedData);
+      }
+    });
+
+    function updateGlobalVegButtonUI() {
+      if (state.globalVegetarian) {
+        globalVegToggleBtn.className = "px-3 py-1.5 text-xs font-bold rounded-lg border transition-all flex items-center gap-1.5 bg-emerald-600 text-white border-emerald-600 shadow-xs cursor-pointer";
+        globalVegToggleBtn.innerHTML = `<i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i> <span>🌱 Vegetar-modus AKTIV (Kone)</span>`;
+      } else {
+        globalVegToggleBtn.className = "px-3 py-1.5 text-xs font-bold rounded-lg border transition-all flex items-center gap-1.5 bg-slate-50 hover:bg-emerald-50 text-slate-700 border-slate-200 cursor-pointer";
+        globalVegToggleBtn.innerHTML = `<i data-lucide="leaf" class="w-3.5 h-3.5 text-emerald-600"></i> <span>🌱 Vegetar-modus for alle (Kone)</span>`;
+      }
+      if (window.lucide) lucide.createIcons();
+    }
+
+    // --- RESULTS TAB SWITCHING ---
+    tabPlanBtn.addEventListener('click', () => {
+      tabPlanBtn.className = "tab-btn px-3 py-1.5 rounded text-xs font-bold text-slate-800 bg-white shadow-xs flex items-center gap-1.5 transition-all";
+      tabGroceryBtn.className = "tab-btn px-3 py-1.5 rounded text-xs font-semibold text-slate-600 hover:text-slate-900 flex items-center gap-1.5 transition-all";
+      tabPlanContent.classList.remove('hidden');
+      tabGroceryContent.classList.add('hidden');
+    });
+
+    tabGroceryBtn.addEventListener('click', () => {
+      tabGroceryBtn.className = "tab-btn px-3 py-1.5 rounded text-xs font-bold text-slate-800 bg-white shadow-xs flex items-center gap-1.5 transition-all";
+      tabPlanBtn.className = "tab-btn px-3 py-1.5 rounded text-xs font-semibold text-slate-600 hover:text-slate-900 flex items-center gap-1.5 transition-all";
+      tabGroceryContent.classList.remove('hidden');
+      tabPlanContent.classList.add('hidden');
+    });
+
+    // --- UI HELPERS ---
+    function showLoading(show) {
+      if (show) loadingOverlay.classList.remove('hidden');
+      else loadingOverlay.classList.add('hidden');
+    }
+
+    function updateLoadingProgress(text, pct) {
+      loadingStepText.innerText = text;
+      loadingProgressBar.style.width = `${pct}%`;
+    }
+
+    function showError(msg) {
+      errorText.innerText = msg;
+      errorContainer.classList.remove('hidden');
+    }
+
+    function hideError() {
+      errorContainer.classList.add('hidden');
+    }
+
+    // --- GENERATE MEAL PLAN ---
+    generatePlanBtn.addEventListener('click', async () => {
+      hideError();
+      showLoading(true);
+
+      // If fridge input is empty, auto generate from inventory
+      if (!fridgeInput.value.trim()) {
+        fridgeInput.value = generateFridgeTextFromInventory();
+      }
+
+      const fridgeIngredients = fridgeInput.value.trim();
+      const defaultPersons = state.defaultPersons;
+      const dailyMealPersons = state.dailyMealPersons;
+      const proteinGoal = state.protein;
+      const carbsGoal = state.carbs;
+      const fatGoal = state.fat;
+      const calorieGoal = (proteinGoal * 4) + (carbsGoal * 4) + (fatGoal * 9);
+
+      try {
+        updateLoadingProgress("Kobler til Gemini AI...", 25);
+
+        let data;
+
+        if (state.apiKey) {
+          updateLoadingProgress("Sender forespørsel til Gemini API...", 50);
+          data = await callGeminiDirectApi({
+            apiKey: state.apiKey,
+            fridgeIngredients,
+            defaultPersons,
+            dailyMealPersons,
+            proteinGoal,
+            carbsGoal,
+            fatGoal,
+            calorieGoal
+          });
+        } else {
+          updateLoadingProgress("Genererer måltidsplan via server-API...", 50);
+          const response = await fetch('/api/generate-meal-plan', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              apiKey: state.apiKey,
+              fridgeIngredients,
+              defaultPersons,
+              dailyMealPersons,
+              proteinGoal,
+              carbsGoal,
+              fatGoal,
+              calorieGoal
+            })
+          });
+
+          const result = await response.json();
+
+          if (!result.success) {
+            throw new Error(result.error || "Feil fra server under måltidsproduksjon.");
+          }
+          data = result.data;
+        }
+
+        updateLoadingProgress("Behandler oppskrifter, matpakker og vegetar-alternativer...", 90);
+
+        state.generatedData = data;
+        state.checkedItems = {};
+        state.completedMeals = {};
+        saveState();
+
+        renderGeneratedPlan(data);
+        showLoading(false);
+
+      } catch (err) {
+        console.error(err);
+        showLoading(false);
+        showError(err.message || "Det oppstod en uventet feil under generering av måltidsplanen.");
+      }
+    });
+
+    // Direct Gemini REST API call for full plan
+    async function callGeminiDirectApi(params) {
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(params.apiKey)}`;
+
+      const mealPersonsFormatted = Object.entries(params.dailyMealPersons || {})
+        .map(([day, p]) => `- ${day}: Lunsj = ${p.lunch} pers, Middag = ${p.dinner} pers`)
+        .join("\n");
+
+      const systemInstruction = `Du er en ekspert ernæringsfysiolog og stjernekokk som spesialiserer seg på velsmakende, sunne ukentlige måltidsplaner på norsk.
+Ditt oppdrag er å generere en komplett 7-dagers måltidsplan (Mandag til Søndag) med Lunsj og Middag for hver dag.
+
+STRENGE REGLER:
+1. PRIORITER INGREDIENSER: Bruk ingredienser fra kjøleskapet: "${params.fridgeIngredients || 'Standard råvarer'}".
+2. FLERSE NÆRINGSMÅL (+/- 10% SLINGRINGSMONN): Dagsmål per porsjon: Protein ~${params.proteinGoal}g, Karbohydrater ~${params.carbsGoal}g, Fett ~${params.fatGoal}g, Totalt ~${params.calorieGoal} kcal/dag.
+3. REALISTISKE LUNSJER:
+   - Mandag til Fredag: Lunsjer MÅ prioriteres som enkle, raske måltider (10-15 min) egnet for meal-prep og matpakke på jobb.
+   - Lørdag og Søndag: Kan være mer avanserte "helgelunsjer" (varme retter, omeletter, brunch).
+4. VEGETAR-ALTERNATIV FOR HVERT MÅLTID (KONE-ALTERNATIV): Generer "vegetarianOption" for HVERT ENESTE måltid.
+5. PORSJONSSTYRING PER MÅLTID:
+${mealPersonsFormatted}
+Ingrediensmengdene for lunsj og middag skal skaleres etter antall personer for det spesifikke måltidet!
+6. HANDLELISTE: Konsolidert handleliste med kategoren "Vegetar-alternativer (Kone)" for ekstra vegetaringredienser.
+Returner BARE gyldig JSON.`;
+
+      const prompt = `Lag en komplett 7-dagers norsk ukesplan. Returner i dette JSON-formatet:
+{
+  "weeklyPlan": [
+    {
+      "day": "Mandag",
+      "lunchPersons": 1,
+      "dinnerPersons": 3,
+      "lunch": {
+        "title": "Kyllingwrap (Matpakke)",
+        "prepTime": "10 min",
+        "difficulty": "Enkel (Meal-prep)",
+        "ingredients": [{ "name": "Kylling", "amount": "150g", "inFridge": true }],
+        "instructions": ["Lag wrap og pakk i matpakkefolie"],
+        "macrosPerPortion": { "protein": 55, "carbs": 35, "fat": 18, "calories": 520 },
+        "vegetarianOption": {
+          "title": "Halloumiwrap (Kone)",
+          "swapDescription": "Bytt ut kylling med halloumi",
+          "ingredients": [{ "name": "Halloumi", "amount": "120g", "inFridge": false }],
+          "instructions": ["Stek halloumi og rull i wrap"],
+          "macrosPerPortion": { "protein": 45, "carbs": 36, "fat": 24, "calories": 540 }
+        }
+      },
+      "dinner": {
+        "title": "Bakt laks med søtpotet",
+        "prepTime": "30 min",
+        "difficulty": "Medium",
+        "ingredients": [{ "name": "Laks", "amount": "600g", "inFridge": true }],
+        "instructions": ["Stek laks"],
+        "macrosPerPortion": { "protein": 95, "carbs": 48, "fat": 38, "calories": 910 },
+        "vegetarianOption": {
+          "title": "Kikerter og halloumi med søtpotet (Kone)",
+          "swapDescription": "Bytt ut laks med kikerter og halloumi",
+          "ingredients": [{ "name": "Kikerter", "amount": "2 bokser", "inFridge": false }],
+          "instructions": ["Stek kikerter og halloumi"],
+          "macrosPerPortion": { "protein": 80, "carbs": 55, "fat": 32, "calories": 830 }
+        }
+      },
+      "dayTotalPerPortion": { "protein": 150, "carbs": 83, "fat": 56, "calories": 1430 }
+    }
+  ],
+  "groceryList": [
+    {
+      "category": "Grønnsaker & Frukt",
+      "items": [{ "name": "Brokkoli", "amount": "2 hoder", "alreadyInFridge": false }]
+    },
+    {
+      "category": "Vegetar-alternativer (Kone)",
+      "items": [{ "name": "Halloumi", "amount": "2 pk", "alreadyInFridge": false }]
+    }
+  ]
+}`;
+
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          systemInstruction: { parts: [{ text: systemInstruction }] },
+          generationConfig: {
+            responseMimeType: "application/json",
+            temperature: 0.7
+          }
+        })
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error?.message || `Gemini API feilet med status ${res.status}`);
+      }
+
+      const resData = await res.json();
+      const rawText = resData.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      
+      try {
+        return JSON.parse(rawText);
+      } catch (e) {
+        const clean = rawText.replace(/```json/g, "").replace(/```/g, "").trim();
+        return JSON.parse(clean);
+      }
+    }
+
+    // --- REGENERATE SINGLE MEAL ("🔄 BYTT UT") ---
+    async function regenerateSingleMeal(dayIdx, mealType) {
+      if (!state.generatedData || !state.generatedData.weeklyPlan) return;
+      const dayData = state.generatedData.weeklyPlan[dayIdx];
+      if (!dayData) return;
+
+      const currentMeal = dayData[mealType];
+      const mealKey = `${dayIdx}_${mealType}`;
+      
+      const mealPersons = (mealType === 'lunch' ? dayData.lunchPersons : dayData.dinnerPersons) 
+        || (state.dailyMealPersons[dayData.day] ? state.dailyMealPersons[dayData.day][mealType] : state.defaultPersons);
+
+      // Set loading state on UI
+      state.loadingMeals[mealKey] = true;
+      renderGeneratedPlan(state.generatedData);
+
+      try {
+        let newMealData;
+
+        if (state.apiKey) {
+          newMealData = await callGeminiDirectSingleMeal({
+            apiKey: state.apiKey,
+            day: dayData.day,
+            mealType,
+            persons: mealPersons,
+            currentMealTitle: currentMeal ? currentMeal.title : '',
+            fridgeIngredients: fridgeInput.value.trim(),
+            proteinGoal: state.protein,
+            carbsGoal: state.carbs,
+            fatGoal: state.fat,
+            calorieGoal: (state.protein * 4) + (state.carbs * 4) + (state.fat * 9)
+          });
+        } else {
+          const res = await fetch('/api/regenerate-single-meal', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              apiKey: state.apiKey,
+              day: dayData.day,
+              mealType,
+              persons: mealPersons,
+              currentMealTitle: currentMeal ? currentMeal.title : '',
+              fridgeIngredients: fridgeInput.value.trim(),
+              proteinGoal: state.protein,
+              carbsGoal: state.carbs,
+              fatGoal: state.fat,
+              calorieGoal: (state.protein * 4) + (state.carbs * 4) + (state.fat * 9)
+            })
+          });
+
+          const result = await res.json();
+          if (!result.success) {
+            throw new Error(result.error || "Feil under generering av nytt måltid.");
+          }
+          newMealData = result.data;
+        }
+
+        // Replace meal in weeklyPlan
+        dayData[mealType] = newMealData;
+
+        // Recalculate dayTotalPerPortion
+        const lunchMacros = dayData.lunch ? dayData.lunch.macrosPerPortion : { protein: 0, carbs: 0, fat: 0, calories: 0 };
+        const dinnerMacros = dayData.dinner ? dayData.dinner.macrosPerPortion : { protein: 0, carbs: 0, fat: 0, calories: 0 };
+        dayData.dayTotalPerPortion = {
+          protein: (lunchMacros.protein || 0) + (dinnerMacros.protein || 0),
+          carbs: (lunchMacros.carbs || 0) + (dinnerMacros.carbs || 0),
+          fat: (lunchMacros.fat || 0) + (dinnerMacros.fat || 0),
+          calories: (lunchMacros.calories || 0) + (dinnerMacros.calories || 0)
+        };
+
+        // Automatically update the global grocery list based on updated plan
+        updateGroceryListFromWeeklyPlan();
+
+        delete state.loadingMeals[mealKey];
+        saveState();
+        renderGeneratedPlan(state.generatedData);
+        showToast(`Genererte nytt alternativ for ${dayData.day} ${mealType === 'lunch' ? 'Lunsj' : 'Middag'}!`, 'success');
+
+      } catch (err) {
+        console.error(err);
+        delete state.loadingMeals[mealKey];
+        renderGeneratedPlan(state.generatedData);
+        showError(`Feil ved erstatning av måltid: ${err.message}`);
+      }
+    }
+
+    async function callGeminiDirectSingleMeal(params) {
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(params.apiKey)}`;
+
+      const targetMacros = params.mealType === 'lunch'
+        ? { protein: Math.round(params.proteinGoal * 0.4), carbs: Math.round(params.carbsGoal * 0.4), fat: Math.round(params.fatGoal * 0.4), calories: Math.round(params.calorieGoal * 0.4) }
+        : { protein: Math.round(params.proteinGoal * 0.6), carbs: Math.round(params.carbsGoal * 0.6), fat: Math.round(params.fatGoal * 0.6), calories: Math.round(params.calorieGoal * 0.6) };
+
+      const systemInstruction = `Du er en stjernekokk.
+Generer ETT NYTT måltid for ${params.day} (${params.mealType === 'lunch' ? 'Lunsj' : 'Middag'}) for ${params.persons} personer.
+Råvarer i kjøleskapet: "${params.fridgeIngredients || 'Standard råvarer'}".
+Måltidet MÅ være annerledes enn "${params.currentMealTitle}".
+Mål-makroer per porsjon: ca ${targetMacros.protein}g protein, ${targetMacros.carbs}g karbohydrater, ${targetMacros.fat}g fett (~${targetMacros.calories} kcal).
+Generer også "vegetarianOption".
+Returner KUN ren JSON.`;
+
+      const prompt = `Lag nytt måltids-objekt i JSON-format med feltene title, prepTime, difficulty, ingredients, instructions, macrosPerPortion, vegetarianOption.`;
+
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          systemInstruction: { parts: [{ text: systemInstruction }] },
+          generationConfig: { responseMimeType: "application/json", temperature: 0.8 }
+        })
+      });
+
+      if (!res.ok) throw new Error(`Gemini API status ${res.status}`);
+      const resData = await res.json();
+      const rawText = resData.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      try {
+        return JSON.parse(rawText);
+      } catch (e) {
+        const clean = rawText.replace(/```json/g, "").replace(/```/g, "").trim();
+        return JSON.parse(clean);
+      }
+    }
+
+    // Auto update consolidated grocery list from all recipes in weekly plan
+    function updateGroceryListFromWeeklyPlan() {
+      if (!state.generatedData || !state.generatedData.weeklyPlan) return;
+
+      const categoryMap = {
+        'Grønnsaker & Frukt': [],
+        'Kjøtt & Fisk': [],
+        'Meieri & Egg': [],
+        'Tørrvarer & Hermetikk': [],
+        'Vegetar-alternativer (Kone)': [],
+        'Krydder, Oljer & Sauser': []
+      };
+
+      state.generatedData.weeklyPlan.forEach(day => {
+        ['lunch', 'dinner'].forEach(mealType => {
+          const meal = day[mealType];
+          if (!meal) return;
+
+          // Main recipe ingredients
+          if (meal.ingredients) {
+            meal.ingredients.forEach(ing => {
+              const cat = guessIngredientCategory(ing.name);
+              addToCategoryList(categoryMap[cat], ing.name, ing.amount, ing.inFridge);
+            });
+          }
+
+          // Vegetarian option ingredients
+          if (meal.vegetarianOption && meal.vegetarianOption.ingredients) {
+            meal.vegetarianOption.ingredients.forEach(ing => {
+              addToCategoryList(categoryMap['Vegetar-alternativer (Kone)'], ing.name, ing.amount, ing.inFridge);
+            });
+          }
+        });
+      });
+
+      // Format back to state.generatedData.groceryList
+      const newList = [];
+      Object.keys(categoryMap).forEach(catName => {
+        if (categoryMap[catName].length > 0) {
+          newList.push({
+            category: catName,
+            items: categoryMap[catName]
+          });
+        }
+      });
+
+      state.generatedData.groceryList = newList;
+    }
+
+    function guessIngredientCategory(name) {
+      const lower = name.toLowerCase();
+      if (lower.includes('kylling') || lower.includes('laks') || lower.includes('kjøtt') || lower.includes('fisk') || lower.includes('svin') || lower.includes('biff') || lower.includes('reker') || lower.includes('torsk')) return 'Kjøtt & Fisk';
+      if (lower.includes('egg') || lower.includes('yoghurt') || lower.includes('melk') || lower.includes('ost') || lower.includes('rømme') || lower.includes('smør')) return 'Meieri & Egg';
+      if (lower.includes('halloumi') || lower.includes('tofu') || lower.includes('oumph') || lower.includes('kikerter') || lower.includes('linser') || lower.includes('bønner') || lower.includes('quorn')) return 'Vegetar-alternativer (Kone)';
+      if (lower.includes('olje') || lower.includes('salt') || lower.includes('pepper') || lower.includes('saus') || lower.includes('krydder') || lower.includes('soya')) return 'Krydder, Oljer & Sauser';
+      if (lower.includes('ris') || lower.includes('wrap') || lower.includes('pasta') || lower.includes('brød') || lower.includes('mjøl') || lower.includes('havre') || lower.includes('hermetikk')) return 'Tørrvarer & Hermetikk';
+      return 'Grønnsaker & Frukt';
+    }
+
+    function addToCategoryList(list, name, amount, alreadyInFridge) {
+      const existing = list.find(i => i.name.toLowerCase() === name.toLowerCase());
+      if (existing) {
+        // keep name, string merge or keep highest
+      } else {
+        list.push({ name, amount, alreadyInFridge: !!alreadyInFridge });
+      }
+    }
+
+    // --- MARK MEAL AS COOKED & AUTOMATICALLY DEDUCT FROM INVENTORY ---
+    function toggleMealCooked(dayIdx, mealType) {
+      if (!state.generatedData || !state.generatedData.weeklyPlan) return;
+      const dayData = state.generatedData.weeklyPlan[dayIdx];
+      if (!dayData) return;
+
+      const mealKey = `${dayIdx}_${mealType}`;
+      const isCurrentlyCompleted = !!state.completedMeals[mealKey];
+
+      if (!isCurrentlyCompleted) {
+        // Mark as completed
+        state.completedMeals[mealKey] = true;
+
+        // Deduct ingredients from inventory
+        const isVegMode = state.globalVegetarian || state.mealVegetarianState[mealKey];
+        const mealObj = dayData[mealType];
+        if (mealObj) {
+          const activeRecipe = (isVegMode && mealObj.vegetarianOption) ? mealObj.vegetarianOption : mealObj;
+          if (activeRecipe && activeRecipe.ingredients) {
+            deductIngredientsFromInventory(activeRecipe.ingredients);
+          }
+        }
+
+        showToast(`Måltidet markert som laget! Ingredienser trukket fra Mitt Lager.`, 'success');
+      } else {
+        // Un-mark
+        delete state.completedMeals[mealKey];
+        showToast(`Måltidet tilbakestilt.`, 'success');
+      }
+
+      saveState();
+      renderGeneratedPlan(state.generatedData);
+      renderInventoryList();
+    }
+
+    // Helper: Deduct parsed ingredient quantities from state.inventory
+    function deductIngredientsFromInventory(ingredientsList) {
+      ingredientsList.forEach(ing => {
+        const parsed = parseAmountAndName(ing.amount, ing.name);
+        if (!parsed.name) return;
+
+        // Find match in inventory
+        const invMatch = state.inventory.find(i => 
+          i.name.toLowerCase().includes(parsed.name.toLowerCase()) || 
+          parsed.name.toLowerCase().includes(i.name.toLowerCase())
+        );
+
+        if (invMatch && parsed.qty > 0) {
+          invMatch.qty = Math.max(0, parseFloat((invMatch.qty - parsed.qty).toFixed(1)));
+        }
+      });
+    }
+
+    // Parse strings like "250g", "2 stk", "1 boks"
+    function parseAmountAndName(amountStr, rawName) {
+      const match = (amountStr || '').match(/([\d\.,]+)\s*([a-zA-ZæøåÆØÅ]+)?/);
+      let qty = match ? parseFloat(match[1].replace(',', '.')) : 1;
+      let unit = match && match[2] ? match[2].toLowerCase() : 'stk';
+      return { qty: isNaN(qty) ? 1 : qty, unit, name: rawName.trim() };
+    }
+
+    // --- RENDER GENERATED PLAN ---
+    function renderGeneratedPlan(data) {
+      if (!data || !data.weeklyPlan) return;
+
+      if (emptyStatePlaceholder) emptyStatePlaceholder.classList.add('hidden');
+      resultsSection.classList.remove('hidden');
+
+      // 1. Render Day Nav Pills
+      dayNavPills.innerHTML = '';
+      data.weeklyPlan.forEach((dayData, idx) => {
+        const isWeekend = dayData.day === 'Lørdag' || dayData.day === 'Søndag';
+        const btn = document.createElement('button');
+        btn.className = `px-2.5 py-1 rounded text-xs font-semibold whitespace-nowrap transition-all border ${idx === 0 ? 'bg-emerald-600 text-white border-emerald-600 shadow-2xs' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'}`;
+        btn.innerHTML = `${dayData.day} ${isWeekend ? '🎉' : ''}`;
+        btn.addEventListener('click', () => {
+          document.getElementById(`day-card-${idx}`).scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+        dayNavPills.appendChild(btn);
+      });
+
+      // 2. Render Day Cards
+      weeklyDaysList.innerHTML = '';
+      data.weeklyPlan.forEach((dayData, idx) => {
+        const isWeekend = dayData.day === 'Lørdag' || dayData.day === 'Søndag';
+        const card = document.createElement('div');
+        card.id = `day-card-${idx}`;
+        card.className = 'bg-white rounded-xl border border-slate-200/80 p-4 sm:p-5 space-y-4 shadow-2xs print-card';
+
+        const dayMacros = dayData.dayTotalPerPortion || {};
+
+        card.innerHTML = `
+          <!-- Day Header -->
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
+            <div class="flex items-center gap-2.5">
+              <span class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-800 font-bold flex items-center justify-center text-xs">${idx + 1}</span>
+              <div>
+                <div class="flex items-center gap-2">
+                  <h3 class="text-base font-bold text-slate-900">${dayData.day}</h3>
+                  ${isWeekend 
+                    ? '<span class="text-[10px] font-bold text-amber-800 bg-amber-100 border border-amber-200 px-1.5 py-0.2 rounded">Helg (Aktiv lunsj)</span>' 
+                    : '<span class="text-[10px] font-bold text-slate-600 bg-slate-100 border border-slate-200 px-1.5 py-0.2 rounded">Ukedag (Matpakke-lunsj)</span>'}
+                </div>
+                <span class="text-[11px] text-slate-500 font-medium">Lunsj: ${dayData.lunchPersons || state.defaultPersons} pers · Middag: ${dayData.dinnerPersons || state.defaultPersons} pers</span>
+              </div>
+            </div>
+
+            <!-- Day Macro Total Badge -->
+            <div class="flex items-center gap-2 text-xs bg-slate-50 border border-slate-200/80 px-2.5 py-1 rounded-lg font-semibold text-slate-700 font-mono shrink-0">
+              <span class="text-emerald-700">${dayMacros.protein || 0}g P</span>
+              <span class="text-slate-300">•</span>
+              <span class="text-blue-600">${dayMacros.carbs || 0}g K</span>
+              <span class="text-slate-300">•</span>
+              <span class="text-amber-600">${dayMacros.fat || 0}g F</span>
+              <span class="text-slate-300">•</span>
+              <span class="text-slate-900 font-bold">${dayMacros.calories || 0} kcal</span>
+            </div>
+          </div>
+
+          <!-- Meals Grid (Lunch & Dinner) -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="day-${idx}-meals-grid">
+            <!-- Meal cards injected dynamically -->
+          </div>
+        `;
+
+        weeklyDaysList.appendChild(card);
+
+        // Inject Lunch and Dinner for this day
+        const mealsGrid = card.querySelector(`#day-${idx}-meals-grid`);
+        mealsGrid.appendChild(createMealCardElement(dayData, 'lunch', idx, isWeekend));
+        mealsGrid.appendChild(createMealCardElement(dayData, 'dinner', idx, isWeekend));
+      });
+
+      // Render Grocery List
+      renderGroceryList(data.groceryList || []);
+
+      if (window.lucide) lucide.createIcons();
+    }
+
+    // --- CREATE MEAL CARD ELEMENT (WITH COOKED BUTTON & REPLACEMENT BUTTON) ---
+    function createMealCardElement(dayData, mealType, dayIdx, isWeekend) {
+      const meal = dayData[mealType];
+      const mealKey = `${dayIdx}_${mealType}`;
+      const isVegMode = state.globalVegetarian || state.mealVegetarianState[mealKey];
+      const isLoading = !!state.loadingMeals[mealKey];
+      const isCompleted = !!state.completedMeals[mealKey];
+
+      const activeMeal = (isVegMode && meal && meal.vegetarianOption) ? meal.vegetarianOption : meal;
+
+      const card = document.createElement('div');
+      card.className = `border rounded-xl p-4 flex flex-col justify-between transition-all relative ${
+        isCompleted ? 'bg-slate-50/80 border-slate-300 opacity-80' : isVegMode ? 'bg-emerald-50/40 border-emerald-200' : 'bg-slate-50/40 border-slate-200/80'
+      }`;
+
+      if (!meal) {
+        card.innerHTML = `<p class="text-xs text-slate-400 italic">Ingen oppskrift for dette måltidet.</p>`;
+        return card;
+      }
+
+      const personsCount = (mealType === 'lunch' ? dayData.lunchPersons : dayData.dinnerPersons) 
+        || (state.dailyMealPersons[dayData.day] ? state.dailyMealPersons[dayData.day][mealType] : state.defaultPersons);
+
+      const macros = activeMeal.macrosPerPortion || {};
+
+      card.innerHTML = `
+        ${isLoading ? `
+          <div class="absolute inset-0 bg-white/90 backdrop-blur-xs z-20 rounded-xl flex flex-col items-center justify-center p-4 text-center">
+            <div class="w-7 h-7 border-2 border-emerald-200 border-t-emerald-600 rounded-full animate-spin mb-2"></div>
+            <span class="text-xs font-bold text-slate-800">Genererer nytt alternativ...</span>
+            <span class="text-[10px] text-slate-500">Oppdaterer måltid & handleliste</span>
+          </div>
+        ` : ''}
+
+        <div class="space-y-3">
+          <!-- Meal Card Top Bar -->
+          <div class="flex items-start justify-between gap-2 border-b border-slate-200/60 pb-2">
+            <div class="space-y-0.5">
+              <div class="flex items-center gap-1.5">
+                <span class="text-[10px] font-bold uppercase tracking-wider ${mealType === 'lunch' ? 'text-amber-700 bg-amber-50 px-1.5 py-0.2 rounded border border-amber-200' : 'text-blue-700 bg-blue-50 px-1.5 py-0.2 rounded border border-blue-200'}">
+                  ${mealType === 'lunch' ? (isWeekend ? '☀️ Lunsj (Helg)' : '💼 Lunsj (Matpakke)') : '🍽️ Middag'}
+                </span>
+                <span class="text-[10px] font-bold text-slate-600 bg-white px-1.5 py-0.2 rounded border border-slate-200">
+                  ${personsCount} ${personsCount === 1 ? 'pers' : 'pers'}
+                </span>
+                ${isCompleted ? '<span class="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-1.5 py-0.2 rounded border border-emerald-300">✅ Laget</span>' : ''}
+              </div>
+              <h4 class="text-sm font-bold text-slate-900 leading-tight ${isCompleted ? 'line-through text-slate-500' : ''}">
+                ${activeMeal.title} ${isVegMode ? '<span class="text-emerald-700 text-xs font-semibold">(Kone)</span>' : ''}
+              </h4>
+            </div>
+
+            <!-- Single Meal Vegetarian Toggle & Replace Button -->
+            <div class="flex items-center gap-1 no-print">
+              <!-- Re-generate / Replace button ("Bytt ut") -->
+              <button 
+                data-action="replace-meal" 
+                class="px-2 py-1 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded text-[11px] font-bold flex items-center gap-1 transition-colors shadow-2xs cursor-pointer"
+                title="Generer et nytt og annerledes måltid for dette sporet"
+              >
+                <i data-lucide="refresh-cw" class="w-3 h-3 text-emerald-600"></i>
+                <span class="hidden sm:inline">Bytt ut</span>
+              </button>
+
+              ${meal.vegetarianOption ? `
+                <button 
+                  data-action="toggle-veg" 
+                  class="px-1.5 py-1 text-[10px] font-bold rounded border transition-colors cursor-pointer ${isVegMode ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-slate-600 border-slate-200 hover:bg-emerald-50'}"
+                  title="Bytt til vegetar for dette måltidet"
+                >
+                  🌱
+                </button>
+              ` : ''}
+            </div>
+          </div>
+
+          ${isVegMode && activeMeal.swapDescription ? `
+            <div class="text-[11px] bg-emerald-100/60 text-emerald-900 p-2 rounded-lg border border-emerald-200/80 font-medium">
+              💡 <strong>Kone-tilpasning:</strong> ${activeMeal.swapDescription}
+            </div>
+          ` : ''}
+
+          <!-- Ingredients List -->
+          <div class="space-y-1">
+            <span class="text-[10px] font-bold uppercase text-slate-400">Ingredienser (skalert for ${personsCount} pers):</span>
+            <ul class="text-xs space-y-1 text-slate-700">
+              ${(activeMeal.ingredients || []).map(ing => `
+                <li class="flex items-center justify-between bg-white px-2 py-1 rounded border border-slate-200/60">
+                  <span class="font-medium">${ing.name}</span>
+                  <div class="flex items-center gap-1.5">
+                    <span class="font-mono font-bold text-slate-800">${ing.amount}</span>
+                    ${ing.inFridge ? '<span class="text-[9px] bg-emerald-100 text-emerald-800 font-bold px-1 py-0.2 rounded">I lager</span>' : ''}
+                  </div>
+                </li>
+              `).join('')}
+            </ul>
+          </div>
+
+          <!-- Instructions -->
+          <div class="space-y-1">
+            <span class="text-[10px] font-bold uppercase text-slate-400">Fremgangsmåte (${activeMeal.prepTime || '15 min'}):</span>
+            <ol class="text-xs list-decimal list-inside space-y-0.5 text-slate-600">
+              ${(activeMeal.instructions || []).map(step => `<li>${step}</li>`).join('')}
+            </ol>
+          </div>
+        </div>
+
+        <!-- Meal Footer: Macros & Cooked Button -->
+        <div class="mt-4 border-t border-slate-200/60 pt-2.5 flex items-center justify-between text-xs font-mono">
+          <div class="flex items-center gap-2 font-semibold text-slate-600">
+            <span class="text-emerald-700">${macros.protein || 0}g P</span>
+            <span>•</span>
+            <span class="text-blue-600">${macros.carbs || 0}g K</span>
+            <span>•</span>
+            <span class="text-amber-600">${macros.fat || 0}g F</span>
+            <span>•</span>
+            <span class="text-slate-900 font-bold">${macros.calories || 0} kcal</span>
+          </div>
+
+          <!-- Cooked Button ("Marker som laget") -->
+          <button 
+            data-action="mark-cooked" 
+            class="no-print px-2.5 py-1 text-[11px] font-bold rounded-lg border transition-all flex items-center gap-1 cursor-pointer ${
+              isCompleted 
+                ? 'bg-slate-200 text-slate-700 border-slate-300 hover:bg-slate-300' 
+                : 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600 shadow-2xs'
+            }"
+            title="Slett ingredienser fra Mitt Lager og marker som spist"
+          >
+            <i data-lucide="${isCompleted ? 'rotate-ccw' : 'check-circle-2'}" class="w-3.5 h-3.5"></i>
+            <span>${isCompleted ? 'Tilbakestill' : '✅ Marker laget'}</span>
+          </button>
+        </div>
+      `;
+
+      // Event listeners on single meal card
+      const vegBtn = card.querySelector('[data-action="toggle-veg"]');
+      if (vegBtn) {
+        vegBtn.addEventListener('click', () => {
+          state.mealVegetarianState[mealKey] = !state.mealVegetarianState[mealKey];
+          saveState();
+          renderGeneratedPlan(state.generatedData);
+        });
+      }
+
+      const replaceBtn = card.querySelector('[data-action="replace-meal"]');
+      if (replaceBtn) {
+        replaceBtn.addEventListener('click', () => {
+          regenerateSingleMeal(dayIdx, mealType);
+        });
+      }
+
+      const cookedBtn = card.querySelector('[data-action="mark-cooked"]');
+      if (cookedBtn) {
+        cookedBtn.addEventListener('click', () => {
+          toggleMealCooked(dayIdx, mealType);
+        });
+      }
+
+      return card;
+    }
+
+    // --- RENDER GROCERY LIST ---
+    function renderGroceryList(groceryCategories) {
+      groceryCategoriesGrid.innerHTML = '';
+
+      let totalItems = 0;
+      let checkedCount = 0;
+
+      groceryCategories.forEach((cat, catIdx) => {
+        const catCard = document.createElement('div');
+        catCard.className = 'bg-slate-50/60 p-3.5 rounded-xl border border-slate-200/80 space-y-2.5';
+
+        catCard.innerHTML = `
+          <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5 border-b border-slate-200/60 pb-1.5">
+            <i data-lucide="tag" class="w-3.5 h-3.5 text-emerald-600"></i> ${cat.category}
+          </h4>
+          <ul class="space-y-1 text-xs" id="cat-items-${catIdx}">
+            <!-- Items injected dynamically -->
+          </ul>
+        `;
+
+        groceryCategoriesGrid.appendChild(catCard);
+
+        const itemsUl = catCard.querySelector(`#cat-items-${catIdx}`);
+
+        cat.items.forEach((item, itemIdx) => {
+          totalItems++;
+          const itemKey = `${cat.category}_${item.name}`;
+          const isChecked = !!state.checkedItems[itemKey];
+
+          if (isChecked) checkedCount++;
+
+          const li = document.createElement('li');
+          li.className = `flex items-center justify-between p-2 rounded-lg border transition-all ${
+            isChecked ? 'bg-slate-100 border-slate-200 opacity-60' : 'bg-white border-slate-200/80'
+          }`;
+
+          li.innerHTML = `
+            <label class="flex items-center gap-2 cursor-pointer w-full select-none">
+              <input 
+                type="checkbox" 
+                class="grocery-checkbox rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer"
+                ${isChecked ? 'checked' : ''}
+              />
+              <span class="${isChecked ? 'line-through text-slate-500' : 'font-medium text-slate-800'}">${item.name}</span>
+            </label>
+
+            <div class="flex items-center gap-1.5 shrink-0">
+              <span class="font-mono font-bold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded text-[11px]">${item.amount}</span>
+              ${item.alreadyInFridge ? '<span class="text-[9px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded">Har</span>' : ''}
+            </div>
+          `;
+
+          const checkbox = li.querySelector('.grocery-checkbox');
+          checkbox.addEventListener('change', () => {
+            state.checkedItems[itemKey] = checkbox.checked;
+            saveState();
+            renderGroceryList(groceryCategories);
+          });
+
+          itemsUl.appendChild(li);
+        });
+      });
+
+      // Update progress bar
+      groceryProgressText.innerText = `${checkedCount} / ${totalItems} varer avkrysset`;
+      const pct = totalItems > 0 ? (checkedCount / totalItems) * 100 : 0;
+      groceryProgressBar.style.width = `${pct}%`;
+
+      if (window.lucide) lucide.createIcons();
+    }
+
+    // --- ADD BOUGHT ITEMS FROM GROCERY LIST TO INVENTORY ---
+    addBoughtToInventoryBtn.addEventListener('click', () => {
+      if (!state.generatedData || !state.generatedData.groceryList) {
+        showToast("Ingen handleliste tilgjengelig enda.", "error");
+        return;
+      }
+
+      let addedCount = 0;
+
+      state.generatedData.groceryList.forEach(cat => {
+        cat.items.forEach(item => {
+          const itemKey = `${cat.category}_${item.name}`;
+          if (state.checkedItems[itemKey]) {
+            // Item is checked as bought!
+            const parsed = parseAmountAndName(item.amount, item.name);
+            
+            // Check if item already exists in inventory
+            const existing = state.inventory.find(i => i.name.toLowerCase() === parsed.name.toLowerCase());
+            if (existing) {
+              existing.qty = parseFloat((existing.qty + parsed.qty).toFixed(1));
+            } else {
+              state.inventory.push({
+                id: Date.now().toString() + Math.random().toString().slice(2, 5),
+                name: parsed.name,
+                qty: parsed.qty,
+                unit: parsed.unit,
+                category: cat.category || 'Tørrvarer & Hermetikk'
+              });
+            }
+            addedCount++;
+          }
+        });
+      });
+
+      if (addedCount > 0) {
+        saveState();
+        renderInventoryList();
+        showToast(`La til ${addedCount} kjøpte varer i Mitt Lager!`, "success");
+      } else {
+        showToast("Huk av de varene du har kjøpt først for å legge dem til i lageret.", "error");
+      }
+    });
+
+    // Custom Item Add on Grocery List
+    addCustomItemBtn.addEventListener('click', () => {
+      const val = customItemInput.value.trim();
+      if (!val) return;
+
+      if (!state.generatedData) state.generatedData = { groceryList: [] };
+      if (!state.generatedData.groceryList) state.generatedData.groceryList = [];
+
+      let miscCat = state.generatedData.groceryList.find(c => c.category === 'Diverse / Egne varer');
+      if (!miscCat) {
+        miscCat = { category: 'Diverse / Egne varer', items: [] };
+        state.generatedData.groceryList.push(miscCat);
+      }
+
+      miscCat.items.push({ name: val, amount: '1 stk', alreadyInFridge: false });
+      customItemInput.value = '';
+      saveState();
+      renderGroceryList(state.generatedData.groceryList);
+      showToast(`La til "${val}" i handlelisten`, 'success');
+    });
+
+    // --- INVENTORY MANAGEMENT LOGIC (MITT LAGER) ---
+    addInventoryForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = invName.value.trim();
+      const qty = parseFloat(invQty.value);
+      const unit = invUnit.value;
+      const category = invCategory.value;
+
+      if (!name || isNaN(qty) || qty <= 0) return;
+
+      const existingIndex = state.inventory.findIndex(i => i.name.toLowerCase() === name.toLowerCase());
+      if (existingIndex >= 0) {
+        state.inventory[existingIndex].qty = parseFloat((state.inventory[existingIndex].qty + qty).toFixed(1));
+        state.inventory[existingIndex].unit = unit;
+        state.inventory[existingIndex].category = category;
+      } else {
+        state.inventory.push({
+          id: Date.now().toString(),
+          name,
+          qty,
+          unit,
+          category
+        });
+      }
+
+      invName.value = '';
+      invQty.value = '';
+
+      // Auto update fridge input text
+      state.fridge = generateFridgeTextFromInventory();
+      fridgeInput.value = state.fridge;
+
+      saveState();
+      renderInventoryList();
+      showToast(`Oppdaterte lager: ${qty}${unit} ${name}`, 'success');
+    });
+
+    resetDefaultInventoryBtn.addEventListener('click', () => {
+      state.inventory = JSON.parse(JSON.stringify(DEFAULT_INVENTORY));
+      state.fridge = generateFridgeTextFromInventory();
+      fridgeInput.value = state.fridge;
+      saveState();
+      renderInventoryList();
+      showToast("Fylte ut standard norsk baselager!", "success");
+    });
+
+    clearAllInventoryBtn.addEventListener('click', () => {
+      if (confirm("Er du sikker på at du vil tømme hele lageret?")) {
+        state.inventory = [];
+        state.fridge = '';
+        fridgeInput.value = '';
+        saveState();
+        renderInventoryList();
+        showToast("Lageret ble tømt.", "error");
+      }
+    });
+
+    inventorySearch.addEventListener('input', () => {
+      renderInventoryList();
+    });
+
+    function renderInventoryList() {
+      inventoryListContainer.innerHTML = '';
+
+      if (!state.inventory) state.inventory = [];
+
+      const query = (inventorySearch.value || '').toLowerCase().trim();
+      const filtered = state.inventory.filter(i => i.name.toLowerCase().includes(query) || i.category.toLowerCase().includes(query));
+
+      statTotalItems.innerText = `${state.inventory.length} varer`;
+
+      if (filtered.length === 0) {
+        inventoryListContainer.innerHTML = `
+          <div class="text-center py-8 text-slate-400 text-xs">
+            Ingen ingredienser funnet i lageret. Legg til nye råvarer ovenfor!
+          </div>
+        `;
+        return;
+      }
+
+      // Group by category
+      const categoriesMap = {};
+      filtered.forEach(item => {
+        if (!categoriesMap[item.category]) categoriesMap[item.category] = [];
+        categoriesMap[item.category].push(item);
+      });
+
+      Object.keys(categoriesMap).forEach(catName => {
+        const catBox = document.createElement('div');
+        catBox.className = 'space-y-1.5';
+        catBox.innerHTML = `
+          <h5 class="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+            <i data-lucide="folder" class="w-3 h-3 text-emerald-600"></i> ${catName}
+          </h5>
+          <div class="space-y-1" id="inv-cat-list-${catName.replace(/[^a-zA-Z0-9]/g, '')}"></div>
+        `;
+        inventoryListContainer.appendChild(catBox);
+
+        const itemsContainer = catBox.querySelector('div');
+
+        categoriesMap[catName].forEach(item => {
+          const isLow = item.qty <= (item.unit === 'g' ? 100 : 1);
+          const row = document.createElement('div');
+          row.className = `flex items-center justify-between p-2 rounded-lg border text-xs transition-colors ${
+            isLow ? 'bg-amber-50/80 border-amber-200' : 'bg-slate-50/60 border-slate-200/80'
+          }`;
+
+          row.innerHTML = `
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-slate-800">${item.name}</span>
+              ${isLow ? '<span class="text-[9px] bg-amber-100 text-amber-800 font-bold px-1 rounded">Lavt nivå</span>' : ''}
+            </div>
+
+            <div class="flex items-center gap-2">
+              <div class="flex items-center bg-white rounded border border-slate-200 overflow-hidden font-mono">
+                <button data-action="sub" class="px-1.5 py-0.5 hover:bg-slate-100 text-slate-600 font-bold">-</button>
+                <span class="px-2 font-bold text-slate-900">${item.qty} ${item.unit}</span>
+                <button data-action="add" class="px-1.5 py-0.5 hover:bg-slate-100 text-slate-600 font-bold">+</button>
+              </div>
+
+              <button data-action="delete" class="p-1 text-slate-400 hover:text-rose-600 rounded transition-colors" title="Slett fra lager">
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+          `;
+
+          row.querySelector('[data-action="sub"]').addEventListener('click', () => {
+            item.qty = Math.max(0, parseFloat((item.qty - (item.unit === 'g' ? 50 : 1)).toFixed(1)));
+            state.fridge = generateFridgeTextFromInventory();
+            fridgeInput.value = state.fridge;
+            saveState();
+            renderInventoryList();
+          });
+
+          row.querySelector('[data-action="add"]').addEventListener('click', () => {
+            item.qty = parseFloat((item.qty + (item.unit === 'g' ? 50 : 1)).toFixed(1));
+            state.fridge = generateFridgeTextFromInventory();
+            fridgeInput.value = state.fridge;
+            saveState();
+            renderInventoryList();
+          });
+
+          row.querySelector('[data-action="delete"]').addEventListener('click', () => {
+            state.inventory = state.inventory.filter(i => i.id !== item.id);
+            state.fridge = generateFridgeTextFromInventory();
+            fridgeInput.value = state.fridge;
+            saveState();
+            renderInventoryList();
+          });
+
+          itemsContainer.appendChild(row);
+        });
+      });
+
+      if (window.lucide) lucide.createIcons();
+    }
+
+    // --- PDF EXPORT & PRINT ---
+    downloadPdfBtn.addEventListener('click', () => {
+      const element = document.getElementById('pdf-export-content');
+      const opt = {
+        margin: 0.5,
+        filename: 'Ukentlig_Maaltidsplan.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+      };
+      html2pdf().set(opt).from(element).save();
+    });
+
+    printBtn.addEventListener('click', () => {
+      window.print();
+    });
+
+    // Run Initialization on load
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
