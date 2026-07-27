@@ -1285,7 +1285,7 @@
 
     // Direct Gemini REST API call for full plan
     async function callGeminiDirectApi(params) {
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(params.apiKey)}`;
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${encodeURIComponent(params.apiKey)}`;
 
       const mealPersonsFormatted = Object.entries(params.dailyMealPersons || {})
         .map(([day, p]) => `- ${day}: Lunsj = ${p.lunch} pers, Middag = ${p.dinner} pers`)
